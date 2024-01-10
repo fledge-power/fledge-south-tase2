@@ -1,0 +1,9 @@
+protocol_stack" : {
+                "name" : "tase2client",
+                "version" : "1.0",
+                "transport_layer" : {
+                    "ied_name":"ied_x"
+                    "ip_addr":"x.x.x.x",
+                    "tcp_port":102
+                }
+}
