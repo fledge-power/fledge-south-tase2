@@ -1,36 +1,24 @@
-# TASE2 C/C++ South plugin
+# fledge-south-tase2
+A simple TASE2 Plugin that pulls data from a server and sends it to Fledge.
 
-A simple asynchronous TASE2 plugin that pulls data from a server and sends it to Fledge.
-
-To build this plugin, you will need the lib61850 library installed on your environment as described below.
-
-You also need to have Fledge installed from the source code, not from the package repository.
-
-## Building lib61850
+## Building libtase2
+To use this plugin you will need a license to use the TASE.2 library
 
 To install the dependencies you can run the requirements.sh script.
 
-If you want to install them manually :
-
-To build TASE2 C/C++ Southth plugin, you need to download lib61850 at:
-https://github.com/mz-automation/libtase2
-
-```bash
-$ git clone https://github.com/mz-automation/libtase2.git
-$ cd libtase2
-$ export LIB_TASE2=`pwd`
-```
 As shown above, you need a $LIB_TASE2 env var set to the source tree of the
 library.
 
-Then, you can build libtase2 with (note mbedtls installation):
+Then, you can build libtase2 with:
 
 ```bash
 $ cd libtase2
-$ cd third-party/mbedtls
+$ cd dependencies
 $ wget -c https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v2.28.3.tar.gz -O - | tar -xz
 $ mv mbedtls-2.28.3 mbedtls-2.28
-$ cd ../../
+$ cd ../
+$ mkdir build
+$ cd build
 $ cmake -DBUILD_TESTS=NO -DBUILD_EXAMPLES=NO ..
 $ make
 $ sudo make install
@@ -122,7 +110,7 @@ a service from a terminal, or from the web API.C
 
 .. code-block:: console
 
-$ curl -sX POST http://localhost:8081/fledge/scheduled/task -d '{"name": "tase2","plugin": "tase2","type": "south","schedule_type": 3,"schedule_day": 0,"schedule_time": 0,"schedule_repeat": 30,"schedule_enabled": true}' ; echo
+$ curl -sX POST http://localhost:8081/fledge/scheduled/task -d '{"name": "tase2","plugin": "tase2","type": "southth","schedule_type": 3,"schedule_day": 0,"schedule_time": 0,"schedule_repeat": 30,"schedule_enabled": true}' ; echo
 
 Or
 
