@@ -103,6 +103,9 @@ TASE2ClientConnection::m_configDatasets ()
 
             for (const auto& entry : dataset->entries)
             {
+                Tase2Utility::log_debug (
+                    "Add datapoint %s to dataset %s:%s", entry.c_str (),
+                    dataset->domain.c_str (), dataset->datasetRef.c_str ());
                 char* strCopy
                     = static_cast<char*> (malloc (entry.length () + 1));
                 if (strCopy != nullptr)
@@ -119,9 +122,11 @@ TASE2ClientConnection::m_configDatasets ()
 
             if (error != TASE2_CLIENT_ERROR_OK)
             {
-                Tase2Utility::log_error ("Error in dataset creation (Dataset "
-                                         "Name : %s, Error Code : %d",
-                                         dataset->datasetRef.c_str (), error);
+                Tase2Utility::log_error (
+                    "Error in dataset creation (Dataset "
+                    "Name : %s, Domain : %s, Error Code : %d",
+                    dataset->datasetRef.c_str (), dataset->domain.c_str (),
+                    error);
             }
 
             LinkedList_destroyDeep (newDataSetEntries, free);

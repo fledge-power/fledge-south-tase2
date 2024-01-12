@@ -15,8 +15,8 @@ TASE2::setJsonConfig (const std::string& stack_configuration,
 
     m_config = new TASE2ClientConfig ();
 
-    m_config->importProtocolConfig (stack_configuration);
     m_config->importExchangeConfig (msg_configuration);
+    m_config->importProtocolConfig (stack_configuration);
     m_config->importTlsConfig (tls_configuration);
 }
 

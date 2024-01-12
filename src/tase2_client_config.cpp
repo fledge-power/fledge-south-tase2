@@ -382,8 +382,12 @@ TASE2ClientConfig::importProtocolConfig (const std::string& protocolConfig)
                             = getExchangeDefinitionByRef (domainName + ":"
                                                           + name);
 
+                        dataset->entries.push_back (name);
+
                         if (def)
+                        {
                             m_polledDatapoints.erase (domainName + ":" + name);
+                        }
                     }
                 }
             }
