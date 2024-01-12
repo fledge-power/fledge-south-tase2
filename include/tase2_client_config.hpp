@@ -1,10 +1,10 @@
 #ifndef TASE2_CLIENT_CONFIG_H
 #define TASE2_CLIENT_CONFIG_H
 
-#include "tase2_utility.hpp"
 #include "libtase2/tase2_client.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
+#include "tase2_utility.hpp"
 #include <gtest/gtest.h>
 #include <logger.h>
 #include <map>
@@ -15,8 +15,11 @@
 #define FRIEND_TESTS                                                          \
     FRIEND_TEST (ConnectionHandlingTest, SingleConnection);                   \
     FRIEND_TEST (ConnectionHandlingTest, SingleConnectionTLS);                \
-    FRIEND_TEST (ConnectionHandlingTest, SingleConnectionReconnect);          
-
+    FRIEND_TEST (ConnectionHandlingTest, SingleConnectionReconnect);          \
+    FRIEND_TEST (ConnectionHandlingTest, TwoConnectionsBackup);               \
+    FRIEND_TEST (SpontDataTest, PollingAllType);                              \
+    FRIEND_TEST (ControlTest, operateDirect);                                 \
+    FRIEND_TEST (ReportingTest, ReportingAllType);
 
 typedef enum
 {
@@ -42,7 +45,6 @@ typedef enum
     DP_TYPE_UNKNOWN = -1
 } DPTYPE;
 
-
 class ConfigurationException : public std::logic_error
 {
   public:
@@ -59,12 +61,12 @@ struct OsiParameters
     int localAeQualifier{ 0 };
     std::string remoteApTitle{ "" };
     int remoteAeQualifier{ 0 };
-    TSelector localTSelector;
-    TSelector remoteTSelector;
-    SSelector localSSelector;
-    SSelector remoteSSelector;
-    PSelector localPSelector;
-    PSelector remotePSelector;
+    Tase2_TSelector localTSelector;
+    Tase2_TSelector remoteTSelector;
+    Tase2_SSelector localSSelector;
+    Tase2_SSelector remoteSSelector;
+    Tase2_PSelector localPSelector;
+    Tase2_PSelector remotePSelector;
 };
 
 struct RedGroup
@@ -79,20 +81,29 @@ struct RedGroup
 struct DataExchangeDefinition
 {
     std::string ref;
-    DPTYPE cdcType;
+    DPTYPE type;
     std::string label;
-    std::string id;
 };
 
 struct DatasetTransferSet
 {
+    std::string domain;
     std::string dstsRef;
     std::string datasetRef;
-    int trgops;
+    int dsConditions;
+    int startTime;
+    int interval;
+    int tle;
+    int bufferTime;
+    int integrityCheck;
+    bool critical;
+    bool rbe;
+    bool allChangesReported;
 };
 
 struct Dataset
 {
+    std::string domain;
     std::string datasetRef;
     std::vector<std::string> entries;
     bool dynamic;
@@ -110,6 +121,8 @@ class TASE2ClientConfig
         return 1;
     };
 
+    static DPTYPE getDpTypeFromString (const std::string& type);
+
     void importProtocolConfig (const std::string& protocolConfig);
     void importJsonConnectionOsiConfig (const rapidjson::Value& connOsiConfig,
                                         RedGroup& iedConnectionParam);
@@ -117,16 +130,19 @@ class TASE2ClientConfig
     importJsonConnectionOsiSelectors (const rapidjson::Value& connOsiConfig,
                                       OsiParameters* osiParams);
     OsiSelectorSize parseOsiPSelector (std::string& inputOsiSelector,
-                                       PSelector* pselector);
+                                       Tase2_PSelector* pselector);
     OsiSelectorSize parseOsiSSelector (std::string& inputOsiSelector,
-                                       SSelector* sselector);
+                                       Tase2_SSelector* sselector);
     OsiSelectorSize parseOsiTSelector (std::string& inputOsiSelector,
-                                       TSelector* tselector);
+                                       Tase2_TSelector* tselector);
     OsiSelectorSize parseOsiSelector (std::string& inputOsiSelector,
                                       uint8_t* selectorValue,
                                       const uint8_t selectorSize);
     void importExchangeConfig (const std::string& exchangeConfig);
     void importTlsConfig (const std::string& tlsConfig);
+
+    static std::pair<std::string, std::string>
+    splitExchangeRef (std::string ref);
 
     std::vector<std::shared_ptr<RedGroup> >&
     GetConnections ()

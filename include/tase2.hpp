@@ -58,6 +58,10 @@ class TASE2
     TASE2ClientConfig* m_config = new TASE2ClientConfig ();
     ;
 
+    bool m_CommandOperation (int count, PLUGIN_PARAMETER** params);
+    bool m_SetPointRealOperation (int count, PLUGIN_PARAMETER** params);
+    bool m_SetPointDiscreteOperation (int count, PLUGIN_PARAMETER** params);
+
     std::string m_asset;
 
     INGEST_CB m_ingest
@@ -84,8 +88,8 @@ class TASE2Client
 
     void prepareConnections ();
 
-    void handleValue (std::string ref, Tase2_PointValue* value,
-                      uint64_t timestamp);
+    void handleValue (std::string ref, Tase2_PointValue value,
+                      uint64_t timestamp, bool ack);
     void handleAllValues ();
 
     bool handleOperation (Datapoint* operation);
@@ -94,6 +98,15 @@ class TASE2Client
                               const std::string& info) const;
 
     void sendCommandAck (const std::string& label, bool terminated);
+
+    bool sendCommand (std::string domain, std::string name, int value,
+                      bool select, long time);
+
+    bool sendSetPointReal (std::string domain, std::string name, float value,
+                           bool select, long time);
+
+    bool sendSetPointDiscrete (std::string domain, std::string name, int value,
+                               bool select, long time);
 
   private:
     std::shared_ptr<std::vector<TASE2ClientConnection*> > m_connections
@@ -131,7 +144,12 @@ class TASE2Client
     void m_handleMonitoringData (const std::string& objRef,
                                  std::vector<Datapoint*>& datapoints,
                                  const std::string& label, DPTYPE type,
-                                 Tase2_PointValue* value, uint64_t timestamp);
+                                 Tase2_PointValue value, uint64_t timestamp);
+
+    Datapoint* m_createDataObject (Tase2_PointValue value,
+                                   const std::string& domain,
+                                   const std::string& name, uint64_t ts,
+                                   DPTYPE type);
 
     std::unordered_map<std::string, Datapoint*> m_outstandingCommands;
 

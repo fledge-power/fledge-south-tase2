@@ -49,9 +49,7 @@ static const char* default_config = QUOTE ({
                         "tls" : false
                     } ]
                 },
-                "application_layer" : {
-                    "polling_interval" : 10000
-                }
+                "application_layer" : { "polling_interval" : 10000 }
             }
         })
     },
@@ -114,7 +112,7 @@ extern "C"
     PLUGIN_INFORMATION*
     plugin_info ()
     {
-        Iec61850Utility::log_info ("61850 Config is %s", info.config);
+        Tase2Utility::log_info ("61850 Config is %s", info.config);
         return &info;
     }
 
@@ -125,7 +123,7 @@ extern "C"
     plugin_init (ConfigCategory* config)
     {
         TASE2* tase2 = nullptr;
-        Iec61850Utility::log_info ("Initializing the plugin");
+        Tase2Utility::log_info ("Initializing the plugin");
 
         tase2 = new TASE2 ();
 
@@ -140,8 +138,8 @@ extern "C"
                 && config->itemExists ("exchanged_data")
                 && config->itemExists ("tls_conf"))
                 tase2->setJsonConfig (config->getValue ("protocol_stack"),
-                                         config->getValue ("exchanged_data"),
-                                         config->getValue ("tls_conf"));
+                                      config->getValue ("exchanged_data"),
+                                      config->getValue ("tls_conf"));
         }
 
         return (PLUGIN_HANDLE)tase2;
@@ -156,7 +154,7 @@ extern "C"
         if (!handle)
             return;
 
-        Iec61850Utility::log_info ("Starting the plugin");
+        Tase2Utility::log_info ("Starting the plugin");
 
         auto* tase2 = reinterpret_cast<TASE2*> (handle);
         tase2->start ();
@@ -200,19 +198,19 @@ extern "C"
             && config.itemExists ("exchanged_data")
             && config.itemExists ("tls"))
             tase2->setJsonConfig (config.getValue ("protocol_stack"),
-                                     config.getValue ("exchanged_data"),
-                                     config.getValue ("tls_conf"));
+                                  config.getValue ("exchanged_data"),
+                                  config.getValue ("tls_conf"));
 
         if (config.itemExists ("asset"))
         {
             tase2->setAssetName (config.getValue ("asset"));
-            Iec61850Utility::log_info (
+            Tase2Utility::log_info (
                 "61850 plugin restart after reconfigure asset");
             tase2->start ();
         }
         else
         {
-            Iec61850Utility::log_error ("61850 plugin restart failed");
+            Tase2Utility::log_error ("61850 plugin restart failed");
         }
     }
 

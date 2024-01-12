@@ -51,7 +51,8 @@ class TASE2ClientConnection
         return m_active;
     };
 
-    Tase2_PointValue readValue (Tase2_ClientError* err, const char* ref);
+    Tase2_PointValue readValue (Tase2_ClientError* err, const char* domain,
+                                const char* name);
 
     bool operate (const std::string& ref, DatapointValue value);
 
@@ -66,6 +67,15 @@ class TASE2ClientConnection
         return m_tcpPort;
     };
 
+    bool sendCommand (std::string domain, std::string name, int value,
+                      bool select, long time);
+
+    bool sendSetPointReal (std::string domain, std::string name, float value,
+                           bool select, long time);
+
+    bool sendSetPointDiscrete (std::string domain, std::string name, int value,
+                               bool select, long time);
+
   private:
     bool prepareConnection ();
     bool
@@ -73,11 +83,13 @@ class TASE2ClientConnection
     {
         return m_useTls;
     };
-    Tase2_Endpoint m_connection = nullptr;
+
+    Tase2_Endpoint m_endpoint = nullptr;
     void executePeriodicTasks ();
 
     void cleanUp ();
 
+    Tase2_Client m_tase2client;
     TASE2Client* m_client;
     TASE2ClientConfig* m_config;
 
@@ -117,9 +129,20 @@ class TASE2ClientConnection
     std::vector<std::pair<TASE2ClientConnection*, ControlObjectStruct*>*>
         m_connControlPairs;
 
+    std::vector<Tase2_ClientDataSet> m_datasets;
+    std::vector<Tase2_ClientDSTransferSet> m_dsts;
+
     void m_initialiseControlObjects ();
     void m_configDatasets ();
-    void m_configRcb ();
+    static void
+    dsTransferSetReportHandler (void* parameter, bool finished, uint32_t seq,
+                                Tase2_ClientDSTransferSet transferSet);
+    static void
+    dsTransferSetValueHandler (void* parameter,
+                               Tase2_ClientDSTransferSet transferSet,
+                               const char* domainName, const char* pointName,
+                               Tase2_PointValue pointValue);
+    void m_configDsts ();
     void m_setVarSpecs ();
     void m_setOsiConnectionParameters ();
 
@@ -131,6 +154,7 @@ class TASE2ClientConnection
     bool m_connecting = false;
     bool m_started = false;
     bool m_useTls = false;
+    bool m_passive = false;
 
     TLSConfiguration m_tlsConfig = nullptr;
 
