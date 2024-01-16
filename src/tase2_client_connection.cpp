@@ -771,6 +771,12 @@ TASE2ClientConnection::sendCommand (std::string domain, std::string name,
                                     int value, bool select, long time)
 {
     Tase2_ClientError err;
+    if (select)
+    {
+        return Tase2_Client_selectDevice (m_tase2client, &err, domain.c_str (),
+                                          name.c_str ())
+               != 0;
+    }
     return Tase2_Client_sendCommand (m_tase2client, &err, domain.c_str (),
                                      name.c_str (), value);
 }
@@ -779,6 +785,12 @@ TASE2ClientConnection::sendSetPointReal (std::string domain, std::string name,
                                          float value, bool select, long time)
 {
     Tase2_ClientError err;
+    if (select)
+    {
+        return Tase2_Client_selectDevice (m_tase2client, &err, domain.c_str (),
+                                          name.c_str ())
+               != 0;
+    }
     return Tase2_Client_sendRealSetPoint (m_tase2client, &err, domain.c_str (),
                                           name.c_str (), value);
 }
@@ -788,6 +800,12 @@ TASE2ClientConnection::sendSetPointDiscrete (std::string domain,
                                              bool select, long time)
 {
     Tase2_ClientError err;
+    if (select)
+    {
+        return Tase2_Client_selectDevice (m_tase2client, &err, domain.c_str (),
+                                          name.c_str ())
+               != 0;
+    }
     return Tase2_Client_sendDiscreteSetPoint (
         m_tase2client, &err, domain.c_str (), name.c_str (), value);
 }

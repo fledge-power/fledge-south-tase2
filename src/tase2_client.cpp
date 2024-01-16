@@ -25,13 +25,13 @@ getMonotonicTimeInMs ()
 static bool
 hasQuality (DPTYPE type)
 {
-    return type % 4 != 0;
+    return type % 4 != 0 && type < COMMAND;
 }
 
 static bool
 hasTimestamp (DPTYPE type)
 {
-    return type % 4 >= 2;
+    return type % 4 >= 2 && type < COMMAND;
 }
 
 static uint64_t

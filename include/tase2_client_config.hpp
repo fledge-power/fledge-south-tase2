@@ -20,7 +20,8 @@
     FRIEND_TEST (SpontDataTest, PollingAllType);                              \
     FRIEND_TEST (ControlTest, operateDirect);                                 \
     FRIEND_TEST (ReportingTest, ReportingAllType);                            \
-    FRIEND_TEST (ReportingTest, ReportingAllTypeDynamicDataset);
+    FRIEND_TEST (ReportingTest, ReportingAllTypeDynamicDataset);              \
+    FRIEND_TEST (ControlTest, operateSelect);
 
 typedef enum
 {
