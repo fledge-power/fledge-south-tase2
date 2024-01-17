@@ -406,6 +406,7 @@ TASE2Client::handleValue (std::string ref, Tase2_PointValue value,
     {
         Tase2Utility::log_error ("Datapoint %s not in exchanged data ",
                                  ref.c_str ());
+        return;
     }
 
     DPTYPE typeId = def->type;

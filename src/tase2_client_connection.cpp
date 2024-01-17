@@ -207,75 +207,35 @@ TASE2ClientConnection::m_configDsts ()
                 Tase2_ClientDSTransferSet_getDataSetDomain (ts),
                 Tase2_ClientDSTransferSet_getDataSetName (ts));
 
-            if (Tase2_ClientDSTransferSet_writeDataSetName (
-                    ts, m_tase2client, dsts->domain.c_str (),
-                    dsts->datasetRef.c_str ())
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error ("Write data set failed!");
+            Tase2_ClientDSTransferSet_setDataSetName (
+                ts, dsts->domain.c_str (), dsts->datasetRef.c_str ());
 
-            Tase2_ClientDSTransferSet_readValues (ts, m_tase2client);
+            Tase2_ClientDSTransferSet_setInterval (ts, dsts->interval);
 
-            Tase2Utility::log_error (
-                "  data-set: %s:%s",
-                Tase2_ClientDSTransferSet_getDataSetDomain (ts),
-                Tase2_ClientDSTransferSet_getDataSetName (ts));
+            Tase2_ClientDSTransferSet_setRBE (ts, dsts->rbe);
 
-            if (Tase2_ClientDSTransferSet_writeInterval (ts, m_tase2client,
-                                                         dsts->interval)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error ("Write interval failed! %s",
-                                         dsts->dstsRef.c_str ());
+            Tase2_ClientDSTransferSet_setCritical (ts, dsts->critical);
 
-            if (Tase2_ClientDSTransferSet_writeRBE (ts, m_tase2client,
-                                                    dsts->rbe)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error ("Write RBE failed!%s",
-                                         dsts->dstsRef.c_str ());
+            Tase2_ClientDSTransferSet_setBufferTime (ts, dsts->bufferTime);
 
-            if (Tase2_ClientDSTransferSet_writeCritical (ts, m_tase2client,
-                                                         dsts->critical)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error ("Write critical failed! %s",
-                                         dsts->dstsRef.c_str ());
+            Tase2_ClientDSTransferSet_setIntegrityCheck (ts, dsts->rbe);
 
-            if (Tase2_ClientDSTransferSet_writeBufferTime (ts, m_tase2client,
-                                                           dsts->bufferTime)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error ("Write Buffer Time failed!%s",
-                                         dsts->dstsRef.c_str ());
+            Tase2_ClientDSTransferSet_setStartTime (ts, dsts->startTime);
 
-            if (Tase2_ClientDSTransferSet_writeIntegrityCheck (
-                    ts, m_tase2client, dsts->rbe)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error ("Write Integrity Check failed!%s",
-                                         dsts->dstsRef.c_str ());
+            Tase2_ClientDSTransferSet_setAllChangesReported (
+                ts, dsts->allChangesReported);
 
-            if (Tase2_ClientDSTransferSet_writeStartTime (ts, m_tase2client,
-                                                          dsts->startTime)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error ("Write StartTime failed!%s",
-                                         dsts->dstsRef.c_str ());
-
-            if (Tase2_ClientDSTransferSet_writeAllChangesReported (
-                    ts, m_tase2client, dsts->allChangesReported)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error (
-                    "Write All Changes Reported failed!%s",
-                    dsts->dstsRef.c_str ());
-
-            if (Tase2_ClientDSTransferSet_writeDSConditionsRequested (
-                    ts, m_tase2client, dsts->dsConditions)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error (
-                    "Failed to write DS conditions requested!");
+            Tase2_ClientDSTransferSet_setDSConditionsRequested (
+                ts, dsts->dsConditions);
 
             Tase2Utility::log_debug ("Start DSTransferSet %s",
                                      dsts->dstsRef.c_str ());
 
-            if (Tase2_ClientDSTransferSet_writeStatus (ts, m_tase2client, true)
-                != TASE2_CLIENT_ERROR_OK)
-                Tase2Utility::log_error ("Write DSTS Status failed! %s",
-                                         dsts->dstsRef.c_str ());
+            Tase2_ClientDSTransferSet_setStatus (ts, true);
+
+            if(!Tase2_ClientDSTransferSet_writeValues (ts, m_tase2client)){
+                Tase2Utility::log_error ("Failed to write dsTs values");
+            }
 
             m_dsts.push_back (ts);
         }

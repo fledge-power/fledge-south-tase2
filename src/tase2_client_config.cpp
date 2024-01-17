@@ -453,7 +453,7 @@ TASE2ClientConfig::importProtocolConfig (const std::string& protocolConfig)
             }
             else
             {
-                dsts->dsConditions = -1;
+                dsts->dsConditions = 0;
             }
 
             if (dstsVal.HasMember (JSON_INTERVAL))
@@ -487,7 +487,7 @@ TASE2ClientConfig::importProtocolConfig (const std::string& protocolConfig)
             }
             else
             {
-                dsts->bufferTime = -1;
+                dsts->bufferTime = 0;
             }
 
             if (dstsVal.HasMember (JSON_START_TIME))
@@ -496,7 +496,7 @@ TASE2ClientConfig::importProtocolConfig (const std::string& protocolConfig)
             }
             else
             {
-                dsts->startTime = -1;
+                dsts->startTime = 0;
             }
 
             if (dstsVal.HasMember (JSON_ALL_CHANGES_REPORTED))
