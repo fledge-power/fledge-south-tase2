@@ -528,13 +528,12 @@ TEST_F (ControlTest, operateSelect)
     ASSERT_FALSE (tase2->operation ("TASE2Command", 7, params));
 
     Thread_sleep (100);
-    delete params[0];
-    delete params[1];
-    delete params[2];
-    delete params[3];
-    delete params[4];
-    delete params[5];
-    delete params[6];
+    
+    for (int i = 0; i < 7; ++i) {
+        delete params[i];
+    }
+    delete[] params;
+    params = nullptr;
 
     params = new PLUGIN_PARAMETER*[7];
     params[0] = new PLUGIN_PARAMETER;
@@ -561,14 +560,14 @@ TEST_F (ControlTest, operateSelect)
     ASSERT_TRUE (tase2->operation ("TASE2Command", 7, params));
 
     Thread_sleep (100);
-    delete params[0];
-    delete params[1];
-    delete params[2];
-    delete params[3];
-    delete params[4];
-    delete params[5];
-    delete params[6];
+    
+    for (int i = 0; i < 7; ++i) {
+        delete params[i];
+    }
+    delete[] params;
+    params = nullptr;
 
+    params = new PLUGIN_PARAMETER*[7];
     params[0] = new PLUGIN_PARAMETER;
     params[0]->name = std::string ("co_type");
     params[0]->value = std::string ("SetPointReal");
@@ -593,14 +592,14 @@ TEST_F (ControlTest, operateSelect)
     ASSERT_TRUE (tase2->operation ("TASE2Command", 7, params));
 
     Thread_sleep (100);
-    delete params[0];
-    delete params[1];
-    delete params[2];
-    delete params[3];
-    delete params[4];
-    delete params[5];
-    delete params[6];
+    
+    for (int i = 0; i < 7; ++i) {
+        delete params[i];
+    }
+    delete[] params;
+    params = nullptr;
 
+    params = new PLUGIN_PARAMETER*[7];
     params[0] = new PLUGIN_PARAMETER;
     params[0]->name = std::string ("co_type");
     params[0]->value = std::string ("SetPointDiscrete");
@@ -624,14 +623,11 @@ TEST_F (ControlTest, operateSelect)
     params[6]->value = std::string ("10000");
     ASSERT_TRUE (tase2->operation ("TASE2Command", 7, params));
 
-    delete params[0];
-    delete params[1];
-    delete params[2];
-    delete params[3];
-    delete params[4];
-    delete params[5];
-    delete params[6];
+    for (int i = 0; i < 7; ++i) {
+        delete params[i];
+    }
     delete[] params;
+    params = nullptr;
 
     auto timeout = std::chrono::seconds (3);
     auto start = std::chrono::high_resolution_clock::now ();

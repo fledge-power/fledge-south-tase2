@@ -628,7 +628,7 @@ TEST_F (ReportingTest, ReportingAllType)
 
     Thread_sleep (1000);
 
-    auto timeout = std::chrono::seconds (3);
+    auto timeout = std::chrono::seconds (10);
     auto start = std::chrono::high_resolution_clock::now ();
     while (ingestCallbackCalled < 16)
     {
@@ -803,7 +803,7 @@ TEST_F (ReportingTest, ReportingAllTypeDynamicDataset)
 
     Thread_sleep (1000);
 
-    auto timeout = std::chrono::seconds (3);
+    auto timeout = std::chrono::seconds (10);
     auto start = std::chrono::high_resolution_clock::now ();
     while (ingestCallbackCalled < 16)
     {

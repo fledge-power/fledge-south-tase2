@@ -233,11 +233,15 @@ TASE2ClientConnection::m_configDsts ()
 
             Tase2_ClientDSTransferSet_setStatus (ts, true);
 
-            if(!Tase2_ClientDSTransferSet_writeValues (ts, m_tase2client)){
+            if (Tase2_ClientDSTransferSet_writeValues (ts, m_tase2client)
+                != TASE2_CLIENT_ERROR_OK)
+            {
                 Tase2Utility::log_error ("Failed to write dsTs values");
+                Tase2_ClientDSTransferSet_destroy(ts);
             }
-
-            m_dsts.push_back (ts);
+            else{
+                m_dsts.push_back (ts);
+            }
         }
         else
             Tase2Utility::log_error ("GetNextDSTransferSet operation failed!");
@@ -270,58 +274,30 @@ TASE2ClientConnection::_conThread ()
                     switch (m_connectionState)
                     {
                     case CON_STATE_IDLE: {
+                        
+                            std::lock_guard<std::mutex> lock (m_conLock);
 
-                        if (m_endpoint != nullptr)
-                        {
+                            if (prepareConnection () && m_tase2client != nullptr)
                             {
-                                std::lock_guard<std::mutex> lock (m_conLock);
-                                Tase2_Endpoint_destroy (m_endpoint);
-                                m_endpoint = nullptr;
-                            }
-                        }
+                                Tase2_Client_connectEx (m_tase2client);
 
-                        if (prepareConnection ())
-                        {
-                            Tase2_ClientError error;
-                            {
-                                std::lock_guard<std::mutex> lock (m_conLock);
+                                Tase2Utility::log_info ("Connecting to %s:%d",
+                                                        m_serverIp.c_str (),
+                                                        m_tcpPort);
+
                                 m_connectionState = CON_STATE_CONNECTING;
                                 m_connecting = true;
                                 m_delayExpirationTime
                                     = getMonotonicTimeInMs () + 10000;
-                                if (m_osiParameters)
-                                    m_setOsiConnectionParameters ();
-                            }
-
-                            Tase2_Client_connectEx (m_tase2client);
-
-                            if (error == TASE2_CLIENT_ERROR_OK)
-                            {
-                                Tase2Utility::log_info ("Connecting to %s:%d",
-                                                        m_serverIp.c_str (),
-                                                        m_tcpPort);
                             }
                             else
                             {
-                                Tase2Utility::log_error (
-                                    "Failed to connect to %s:%d",
-                                    m_serverIp.c_str (), m_tcpPort);
-                                {
-                                    std::lock_guard<std::mutex> lock (
-                                        m_conLock);
-                                    m_connectionState = CON_STATE_FATAL_ERROR;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            {
-                                std::lock_guard<std::mutex> lock (m_conLock);
                                 m_connectionState = CON_STATE_FATAL_ERROR;
+
+                                Tase2Utility::log_error (
+                                    "Fatal configuration error");
                             }
-                            Tase2Utility::log_error (
-                                "Fatal configuration error");
-                        }
+                        
                     }
                     break;
 
@@ -491,6 +467,13 @@ TASE2ClientConnection::Stop ()
 bool
 TASE2ClientConnection::prepareConnection ()
 {
+    if (m_endpoint != nullptr)
+    {
+        Tase2_Endpoint_destroy (m_endpoint);
+        m_endpoint = nullptr;
+    }
+    
+
     if (UseTLS ())
     {
         TLSConfiguration tlsConfig = TLSConfiguration_create ();
@@ -697,7 +680,10 @@ TASE2ClientConnection::prepareConnection ()
 
     m_setOsiConnectionParameters ();
     m_tase2client = Tase2_Client_createEx (m_endpoint);
-
+    if (m_tase2client)
+    {
+        Tase2Utility::log_debug ("Client created successfully");
+    }
     return m_tase2client != nullptr;
 }
 

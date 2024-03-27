@@ -100,18 +100,12 @@ TASE2::m_CommandOperation (int count, PLUGIN_PARAMETER** params)
 {
     if (count > 6)
     {
-        // common address of the asdu
         std::string domain = params[DOMAIN]->value;
 
-        // information object address
         std::string name = params[NAME]->value;
 
-        // command state to send, must be a boolean
-        // 0 = off, 1 otherwise
         int value = atoi (params[VALUE]->value.c_str ());
 
-        // select or execute, must be a boolean
-        // 0 = execute, otherwise = select
         bool select
             = static_cast<bool> (atoi (params[SELECT]->value.c_str ()));
 
@@ -137,18 +131,12 @@ TASE2::m_SetPointRealOperation (int count, PLUGIN_PARAMETER** params)
 {
     if (count > 6)
     {
-        // common address of the asdu
         std::string domain = params[DOMAIN]->value;
 
-        // information object address
         std::string name = params[NAME]->value;
 
-        // command state to send, must be a boolean
-        // 0 = off, 1 otherwise
         float value = atof (params[VALUE]->value.c_str ());
 
-        // select or execute, must be a boolean
-        // 0 = execute, otherwise = select
         bool select
             = static_cast<bool> (atoi (params[SELECT]->value.c_str ()));
 
@@ -174,18 +162,12 @@ TASE2::m_SetPointDiscreteOperation (int count, PLUGIN_PARAMETER** params)
 {
     if (count > 6)
     {
-        // common address of the asdu
         std::string domain = params[DOMAIN]->value;
 
-        // information object address
         std::string name = params[NAME]->value;
 
-        // command state to send, must be a boolean
-        // 0 = off, 1 otherwise
         int value = atoi (params[VALUE]->value.c_str ());
 
-        // select or execute, must be a boolean
-        // 0 = execute, otherwise = select
         bool select
             = static_cast<bool> (atoi (params[SELECT]->value.c_str ()));
 

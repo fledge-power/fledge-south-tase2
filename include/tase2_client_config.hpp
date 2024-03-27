@@ -21,7 +21,8 @@
     FRIEND_TEST (ControlTest, operateDirect);                                 \
     FRIEND_TEST (ReportingTest, ReportingAllType);                            \
     FRIEND_TEST (ReportingTest, ReportingAllTypeDynamicDataset);              \
-    FRIEND_TEST (ControlTest, operateSelect);
+    FRIEND_TEST (ControlTest, operateSelect);                                 \
+    FRIEND_TEST (ConnectionHandlingTest, SingleConnectionTryBeforeServerStarts);
 
 typedef enum
 {
