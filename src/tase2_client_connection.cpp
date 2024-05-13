@@ -260,136 +260,115 @@ TASE2ClientConnection::executePeriodicTasks ()
     }
 }
 
-void
-TASE2ClientConnection::_conThread ()
+void TASE2ClientConnection::_conThread()
 {
     try
     {
         while (m_started)
         {
+            if (m_connect)
             {
-                if (m_connect)
-                {
-                    Tase2_Endpoint_State newState;
-                    switch (m_connectionState)
-                    {
-                    case CON_STATE_IDLE: {
-                        
-                            std::lock_guard<std::mutex> lock (m_conLock);
-
-                            if (prepareConnection () && m_tase2client != nullptr)
-                            {
-                                Tase2_Client_connectEx (m_tase2client);
-
-                                Tase2Utility::log_info ("Connecting to %s:%d",
-                                                        m_serverIp.c_str (),
-                                                        m_tcpPort);
-
-                                m_connectionState = CON_STATE_CONNECTING;
-                                m_connecting = true;
-                                m_delayExpirationTime
-                                    = getMonotonicTimeInMs () + 10000;
-                            }
-                            else
-                            {
-                                m_connectionState = CON_STATE_FATAL_ERROR;
-
-                                Tase2Utility::log_error (
-                                    "Fatal configuration error");
-                            }
-                        
-                    }
-                    break;
-
-                    case CON_STATE_CONNECTING:
-                        newState = Tase2_Endpoint_getState (m_endpoint);
-                        if (newState == TASE2_ENDPOINT_STATE_CONNECTED)
-                        {
-                            {
-                                std::lock_guard<std::mutex> lock (m_conLock);
-                                m_configDatasets ();
-                                m_configDsts ();
-                                Tase2_Client_installDSTransferSetReportHandler (
-                                    m_tase2client, dsTransferSetReportHandler,
-                                    nullptr);
-                                Tase2_Client_installDSTransferSetValueHandler (
-                                    m_tase2client, dsTransferSetValueHandler,
-                                    this);
-                                Tase2Utility::log_info ("Connected to %s:%d",
-                                                        m_serverIp.c_str (),
-                                                        m_tcpPort);
-                                m_connectionState = CON_STATE_CONNECTED;
-                                m_connecting = false;
-                                m_connected = true;
-                            }
-                        }
-                        else if (getMonotonicTimeInMs ()
-                                 > m_delayExpirationTime)
-                        {
-                            std::lock_guard<std::mutex> lock (m_conLock);
-                            Tase2Utility::log_warn (
-                                "Timeout while connecting %d", m_tcpPort);
-                            Disconnect ();
-                        }
-                        break;
-
-                    case CON_STATE_CONNECTED: {
-                        std::lock_guard<std::mutex> lock (m_conLock);
-                        newState = Tase2_Endpoint_getState (m_endpoint);
-                        if (newState != TASE2_ENDPOINT_STATE_CONNECTED)
-                        {
-                            cleanUp ();
-                            m_connectionState = CON_STATE_IDLE;
-                        }
-                        else
-                        {
-                            executePeriodicTasks ();
-                        }
-                    }
-                    break;
-
-                    case CON_STATE_CLOSED: {
-                        std::lock_guard<std::mutex> lock (m_conLock);
-                        m_delayExpirationTime
-                            = getMonotonicTimeInMs () + 10000;
-                        m_connectionState = CON_STATE_WAIT_FOR_RECONNECT;
-                    }
-                    break;
-
-                    case CON_STATE_WAIT_FOR_RECONNECT: {
-                        std::lock_guard<std::mutex> lock (m_conLock);
-                        if (getMonotonicTimeInMs () >= m_delayExpirationTime)
-                        {
-                            m_connectionState = CON_STATE_IDLE;
-                        }
-                    }
-                    break;
-
-                    case CON_STATE_FATAL_ERROR:
-                        break;
-                    }
-                }
+                processConnectionState();
             }
-
-            Thread_sleep (50);
+            Thread_sleep(50); 
         }
-        {
-            std::lock_guard<std::mutex> lock (m_conLock);
-            cleanUp ();
-        }
+        std::lock_guard<std::mutex> lock(m_conLock);
+        cleanUp();
     }
     catch (const std::exception& e)
     {
-        Tase2Utility::log_error ("Exception caught in _conThread: %s",
-                                 e.what ());
+        Tase2Utility::log_error("Exception caught in _conThread: %s", e.what());
     }
 }
 
+void TASE2ClientConnection::processConnectionState()
+{
+    std::lock_guard<std::mutex> lock(m_conLock);
+    Tase2_Endpoint_State newState;
+
+    switch (m_connectionState)
+    {
+    case CON_STATE_IDLE:
+        if (prepareConnection () && m_tase2client != nullptr)
+        {
+            Tase2_Client_connectEx (m_tase2client);
+
+            Tase2Utility::log_info ("Connecting to %s:%d",
+                                    m_serverIp.c_str (),
+                                    m_tcpPort);
+
+            m_connectionState = CON_STATE_CONNECTING;
+            m_connecting = true;
+            m_delayExpirationTime
+                = getMonotonicTimeInMs () + 10000;
+        }
+        else
+        {
+            Tase2Utility::log_error("Fatal configuration error");
+            m_connectionState = CON_STATE_FATAL_ERROR;
+        }
+        break;
+
+    case CON_STATE_CONNECTING:
+        newState = Tase2_Endpoint_getState(m_endpoint);
+        if (newState == TASE2_ENDPOINT_STATE_CONNECTED)
+        {
+            m_connectionState = CON_STATE_CONNECTED;
+            m_connected = true;
+            m_connecting = false;
+            postConnectionSetup(); 
+        }
+        else if (getMonotonicTimeInMs() > m_delayExpirationTime)
+        {
+            Tase2Utility::log_warn("Timeout while connecting %d", m_tcpPort);
+            m_connectionState = CON_STATE_CLOSED;
+        }
+        break;
+
+    case CON_STATE_CONNECTED:
+        newState = Tase2_Endpoint_getState(m_endpoint);
+        if (newState != TASE2_ENDPOINT_STATE_CONNECTED)
+        {
+            Disconnect();
+            m_connectionState = CON_STATE_CLOSED;
+        }
+        else
+        {
+            executePeriodicTasks();
+        }
+        break;
+
+    case CON_STATE_CLOSED:
+        m_connectionState = CON_STATE_WAIT_FOR_RECONNECT;
+        m_delayExpirationTime = getMonotonicTimeInMs() + 10000;
+        break;
+
+    case CON_STATE_WAIT_FOR_RECONNECT:
+        if (getMonotonicTimeInMs() >= m_delayExpirationTime)
+        {
+            m_connectionState = CON_STATE_IDLE;
+        }
+        break;
+
+    case CON_STATE_FATAL_ERROR:
+        break;
+    }
+}
+
+void TASE2ClientConnection::postConnectionSetup()
+{
+    m_configDatasets();
+    m_configDsts();
+    Tase2_Client_installDSTransferSetReportHandler(m_tase2client, dsTransferSetReportHandler, nullptr);
+    Tase2_Client_installDSTransferSetValueHandler(m_tase2client, dsTransferSetValueHandler, this);
+    Tase2Utility::log_info("Connected to %s:%d", m_serverIp.c_str(), m_tcpPort);
+}
 void
 TASE2ClientConnection::Start ()
 {
     if (!m_started)
     {
+        Tase2Utility::log_debug("Starting connection %s:%d", m_serverIp.c_str(), m_tcpPort);
         m_started = true;
 
         m_conThread
@@ -472,6 +451,8 @@ TASE2ClientConnection::prepareConnection ()
         Tase2_Endpoint_destroy (m_endpoint);
         m_endpoint = nullptr;
     }
+
+    Tase2Utility::log_debug("Preparing connection %s:%d", m_serverIp.c_str(), m_tcpPort);
     
 
     if (UseTLS ())
@@ -687,21 +668,27 @@ TASE2ClientConnection::prepareConnection ()
     return m_tase2client != nullptr;
 }
 
-void
-TASE2ClientConnection::Disconnect ()
+void TASE2ClientConnection::Connect()
 {
+    {
+        std::lock_guard<std::mutex> lock(m_conLock);
+        m_connect = true; 
+    }
+}
+
+void TASE2ClientConnection::Disconnect()
+{        
+    if (!m_started)  
+        return;
+
     m_connecting = false;
     m_connected = false;
     m_connect = false;
     m_connectionState = CON_STATE_IDLE;
-    cleanUp ();
+
+    cleanUp();
 }
 
-void
-TASE2ClientConnection::Connect ()
-{
-    m_connect = true;
-}
 
 Tase2_PointValue
 TASE2ClientConnection::readValue (Tase2_ClientError* error, const char* domain,

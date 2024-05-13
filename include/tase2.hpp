@@ -131,6 +131,10 @@ class TASE2Client
     std::thread* m_monitoringThread = nullptr;
     void _monitoringThread ();
 
+    bool tryEstablishConnection (TASE2ClientConnection* clientConnection);
+
+    void cleanUpConnections ();
+
     bool m_started = false;
 
     TASE2ClientConfig* m_config;

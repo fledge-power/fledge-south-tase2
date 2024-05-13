@@ -20,6 +20,8 @@ class TASE2ClientConnection
 
     ~TASE2ClientConnection ();
 
+    void postConnectionSetup ();
+
     void Start ();
     void Stop ();
     void Activate ();
@@ -92,6 +94,8 @@ class TASE2ClientConnection
     Tase2_Client m_tase2client;
     TASE2Client* m_client;
     TASE2ClientConfig* m_config;
+
+    void cleanUpConnections();
 
     static void reportCallbackFunction (void* parameter,
                                         Tase2_ClientDSTransferSet report);
@@ -167,6 +171,8 @@ class TASE2ClientConnection
 
     std::thread* m_conThread = nullptr;
     void _conThread ();
+
+    void processConnectionState ();
 
     bool m_connect = false;
     bool m_disconnect = false;

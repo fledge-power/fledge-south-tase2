@@ -204,84 +204,57 @@ TASE2Client::updateConnectionStatus (ConnectionStatus newState)
     m_connStatus = newState;
 }
 
-void
-TASE2Client::_monitoringThread ()
-{
-    if (m_started)
-    {
-        std::lock_guard<std::mutex> lock (m_activeConnectionMtx);
-        for (auto clientConnection : *m_connections)
-        {
-            clientConnection->Start ();
-        }
-    }
+void TASE2Client::_monitoringThread() {
+    std::unique_lock<std::mutex> lock(m_activeConnectionMtx, std::defer_lock);
 
-    updateConnectionStatus (ConnectionStatus::NOT_CONNECTED);
+    while (m_started) {
+        lock.lock();
 
-    uint64_t backupConnectionStartTime
-        = Hal_getTimeInMs () + BACKUP_CONNECTION_TIMEOUT;
-
-    while (m_started)
-    {
-        std::lock_guard<std::mutex> lock (m_activeConnectionMtx);
-
-        if (m_active_connection == nullptr
-            || m_active_connection->Disconnected ())
-        {
+        if (m_active_connection == nullptr || m_active_connection->Disconnected()) {
             bool foundOpenConnections = false;
-            for (auto clientConnection : *m_connections)
-            {
-                backupConnectionStartTime
-                    = Hal_getTimeInMs () + BACKUP_CONNECTION_TIMEOUT;
-
-                foundOpenConnections = true;
-
-                clientConnection->Connect ();
-
-                m_active_connection = clientConnection;
-
-                Tase2Utility::log_debug ("Trying connection %s:%d",
-                                         clientConnection->IP ().c_str (),
-                                         clientConnection->Port ());
-
-                auto start = std::chrono::high_resolution_clock::now ();
-                auto timeout = std::chrono::milliseconds (
-                    m_config->backupConnectionTimeout ());
-
-                while (!clientConnection->Connected ())
-                {
-                    auto now = std::chrono::high_resolution_clock::now ();
-                    if (now - start > timeout)
-                    {
-                        clientConnection->Disconnect ();
-                        m_active_connection = nullptr;
-                        break;
-                    }
-                    Thread_sleep (10);
-                }
-
-                if (m_active_connection)
-                {
+            for (auto& clientConnection : *m_connections) {
+                Tase2Utility::log_debug("Attempting connection with %s:%d", clientConnection->IP().c_str(), clientConnection->Port());
+                if (tryEstablishConnection(clientConnection)) {
+                    m_active_connection = clientConnection;
+                    foundOpenConnections = true;
                     break;
                 }
             }
+            if (!foundOpenConnections) {
+                updateConnectionStatus(ConnectionStatus::NOT_CONNECTED);
+            }
         }
-        else
-        {
-            backupConnectionStartTime
-                = Hal_getTimeInMs () + BACKUP_CONNECTION_TIMEOUT;
-        }
-
-        Thread_sleep (100);
+        lock.unlock();
+        Thread_sleep(100);
     }
 
-    for (auto& clientConnection : *m_connections)
-    {
-        std::lock_guard<std::mutex> lock (m_activeConnectionMtx);
+    cleanUpConnections();
+}
+
+bool TASE2Client::tryEstablishConnection(TASE2ClientConnection* clientConnection) {
+    clientConnection->Connect();
+    clientConnection->Start();
+    auto start = std::chrono::high_resolution_clock::now();
+    auto timeout = std::chrono::milliseconds(m_config->backupConnectionTimeout());
+
+    while (!clientConnection->Connected()) {
+        auto now = std::chrono::high_resolution_clock::now();
+        if (now - start > timeout) {
+            clientConnection->Disconnect();
+            return false;
+        }
+        Thread_sleep(10);
+    }
+
+    return true;
+}
+
+void TASE2Client::cleanUpConnections() {
+    std::lock_guard<std::mutex> lock(m_activeConnectionMtx);
+    for (auto& clientConnection : *m_connections) {
         delete clientConnection;
     }
-
-    m_connections->clear ();
+    m_connections->clear();
 }
 
 bool

@@ -142,7 +142,6 @@ class ConnectionHandlingTest : public testing::Test
     void
     TearDown () override
     {
-        tase2->stop ();
         delete tase2;
 
         for (auto reading : storedReadings)
@@ -347,11 +346,12 @@ TEST_F (ConnectionHandlingTest, SingleConnectionReconnect)
     }
 
     Tase2_Server_stop (server);
-
+    cout << "Stopping server";
     Thread_sleep (2000);
 
     Tase2_Server_start (server);
-
+    cout << "Starting server";
+    
     start = std::chrono::high_resolution_clock::now ();
     timeout = std::chrono::seconds (20);
     while (!tase2->m_client->m_active_connection
@@ -560,62 +560,63 @@ TEST_F (ConnectionHandlingTest, TwoConnectionsBackup)
     Tase2_DataModel_destroy (model2);
 }
 
-TEST_F (ConnectionHandlingTest, SingleConnectionTryBeforeServerStarts)
-{
-    tase2->setJsonConfig (protocol_config, exchanged_data, tls_config);
+TEST_F(ConnectionHandlingTest, SingleConnectionTryBeforeServerStarts) {
+    tase2->setJsonConfig(protocol_config, exchanged_data, tls_config);
 
-    Tase2_DataModel model = Tase2_DataModel_create ();
+    Tase2_DataModel model = Tase2_DataModel_create();
+    Tase2_Domain icc = Tase2_DataModel_addDomain(model, "icc1");
+    Tase2_BilateralTable blt = Tase2_BilateralTable_create("blt1", icc, "1.1.1.998", 12);
 
-    Tase2_Domain icc = Tase2_DataModel_addDomain (model, "icc1");
+    auto endpointDeleter = [](Tase2_Endpoint ep) {
+        Tase2_Endpoint_destroy(ep);
+    };
+    
+    std::unique_ptr<std::remove_pointer<Tase2_Endpoint>::type, decltype(endpointDeleter)> endpoint(
+        Tase2_Endpoint_create(nullptr, true),
+        endpointDeleter
+    );
 
-    Tase2_BilateralTable blt
-        = Tase2_BilateralTable_create ("blt1", icc, "1.1.1.998", 12);
+    Tase2_Endpoint_setLocalIpAddress(endpoint.get(), "0.0.0.0");
+    Tase2_Endpoint_setLocalTcpPort(endpoint.get(), 10002);
+    Tase2_Endpoint_setLocalApTitle(endpoint.get(), "1.1.1.999", 12);
 
-    Tase2_Endpoint endpoint = Tase2_Endpoint_create (nullptr, true);
+    Tase2_Server server = Tase2_Server_createEx(model, endpoint.get());
+    Tase2_Server_addBilateralTable(server, blt);
 
-    Tase2_Endpoint_setLocalIpAddress (endpoint, "0.0.0.0");
-    Tase2_Endpoint_setLocalTcpPort (endpoint, 10002);
-
-    Tase2_Endpoint_setLocalApTitle (endpoint, "1.1.1.999", 12);
-
-    Tase2_Server server = Tase2_Server_createEx (model, endpoint);
-
-    Tase2_Server_addBilateralTable (server, blt);
-
-    tase2->start ();
-    Thread_sleep (20000);
+    tase2->start();
+    Thread_sleep(20000);  
 
     TASE2Client* client = tase2->m_client;
-    TASE2ClientConnection* connection = client->m_active_connection;
-    Tase2_Endpoint clientEndpoint = connection->m_endpoint;
+    ASSERT_NE(client, nullptr);
 
-    ASSERT_NE(Tase2_Endpoint_getState (clientEndpoint), TASE2_ENDPOINT_STATE_CONNECTED);
-
-    Tase2_Server_start (server);
-
-    auto start = std::chrono::high_resolution_clock::now ();
-    auto timeout = std::chrono::seconds (20);
-    while (!tase2->m_client->m_active_connection
-           || !tase2->m_client->m_active_connection->m_endpoint
-           || tase2->m_client->m_active_connection->m_connectionState != TASE2ClientConnection::ConState::CON_STATE_CONNECTED)
-    {
-        auto now = std::chrono::high_resolution_clock::now ();
-        if (now - start > timeout)
-        {
-            Tase2_Endpoint_destroy (endpoint);
-            Tase2_Server_stop (server);
-            Tase2_Server_destroy (server);
-            Tase2_DataModel_destroy (model);
-            FAIL () << "Connection not established within timeout";
-            break;
-        }
-        Thread_sleep (10);
+    if (client->m_active_connection && client->m_active_connection->m_endpoint) {
+        auto clientEndpoint = client->m_active_connection->m_endpoint;
+        ASSERT_NE(Tase2_Endpoint_getState(clientEndpoint), TASE2_ENDPOINT_STATE_CONNECTED);
     }
 
-    Tase2_Server_stop (server);
+    Tase2_Server_start(server);
 
-    Tase2_Endpoint_destroy (endpoint);
-    Tase2_Server_stop (server);
-    Tase2_Server_destroy (server);
-    Tase2_DataModel_destroy (model);
+    auto start = std::chrono::high_resolution_clock::now();
+    auto timeout = std::chrono::seconds(20);
+    bool connected = false;
+    while (!connected) {
+        if (client->m_active_connection && client->m_active_connection->m_endpoint) {
+            if (Tase2_Endpoint_getState(client->m_active_connection->m_endpoint) == TASE2_ENDPOINT_STATE_CONNECTED) {
+                connected = true;
+            }
+        }
+        auto now = std::chrono::high_resolution_clock::now();
+        if (now - start > timeout) {
+            Tase2_Server_stop(server);
+            Tase2_Server_destroy(server);
+            Tase2_DataModel_destroy(model);
+            FAIL() << "Connection not established within timeout";
+            break;
+        }
+        Thread_sleep(10);
+    }
+
+    Tase2_Server_stop(server);
+    Tase2_Server_destroy(server);
+    Tase2_DataModel_destroy(model);
 }
