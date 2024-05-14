@@ -322,6 +322,7 @@ void TASE2ClientConnection::processConnectionState()
         {
             Tase2Utility::log_warn("Timeout while connecting %d", m_tcpPort);
             m_connectionState = CON_STATE_CLOSED;
+            Disconnect();
         }
         break;
 

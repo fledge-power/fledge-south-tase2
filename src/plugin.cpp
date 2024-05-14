@@ -196,7 +196,7 @@ extern "C"
 
         if (config.itemExists ("protocol_stack")
             && config.itemExists ("exchanged_data")
-            && config.itemExists ("tls"))
+            && config.itemExists ("tls_conf"))
             tase2->setJsonConfig (config.getValue ("protocol_stack"),
                                   config.getValue ("exchanged_data"),
                                   config.getValue ("tls_conf"));
@@ -205,12 +205,12 @@ extern "C"
         {
             tase2->setAssetName (config.getValue ("asset"));
             Tase2Utility::log_info (
-                "61850 plugin restart after reconfigure asset");
+                "TASE2 plugin restart after reconfigure asset");
             tase2->start ();
         }
         else
         {
-            Tase2Utility::log_error ("61850 plugin restart failed");
+            Tase2Utility::log_error ("TASE2 plugin restart failed");
         }
     }
 
