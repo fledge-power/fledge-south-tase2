@@ -50,7 +50,7 @@ class TASE2ClientConnection
     bool
     Active () const
     {
-        return m_active;
+        return m_connect;
     };
 
     Tase2_PointValue readValue (Tase2_ClientError* err, const char* domain,
@@ -154,7 +154,6 @@ class TASE2ClientConnection
     int m_tcpPort;
     std::string m_serverIp;
     bool m_connected = false;
-    bool m_active = false;
     bool m_connecting = false;
     bool m_started = false;
     bool m_useTls = false;

@@ -205,48 +205,77 @@ TASE2Client::updateConnectionStatus (ConnectionStatus newState)
 }
 
 void TASE2Client::_monitoringThread() {
-    std::unique_lock<std::mutex> lock(m_activeConnectionMtx, std::defer_lock);
+    if (m_started)
+    {
+        std::lock_guard<std::mutex> lock (m_activeConnectionMtx);
+        for (auto clientConnection : *m_connections)
+        {
+            clientConnection->Start ();
+        }
+    }
 
-    while (m_started) {
-        lock.lock();
+    updateConnectionStatus (ConnectionStatus::NOT_CONNECTED);
 
-        if (m_active_connection == nullptr || m_active_connection->Disconnected()) {
+    uint64_t backupConnectionStartTime
+        = Hal_getTimeInMs () + m_config->backupConnectionTimeout();
+
+    while (m_started)
+    {
+        std::lock_guard<std::mutex> lock (m_activeConnectionMtx);
+
+        if (m_active_connection == nullptr
+            || m_active_connection->Disconnected ())
+        {
             bool foundOpenConnections = false;
-            for (auto& clientConnection : *m_connections) {
-                Tase2Utility::log_debug("Attempting connection with %s:%d", clientConnection->IP().c_str(), clientConnection->Port());
-                if (tryEstablishConnection(clientConnection)) {
-                    m_active_connection = clientConnection;
-                    foundOpenConnections = true;
+            for (auto clientConnection : *m_connections)
+            {
+                backupConnectionStartTime
+                    = Hal_getTimeInMs () + m_config->backupConnectionTimeout();
+
+                foundOpenConnections = true;
+
+                clientConnection->Connect ();
+
+                m_active_connection = clientConnection;
+
+                Tase2Utility::log_debug ("Trying connection %s:%d",
+                                            clientConnection->IP ().c_str (),
+                                            clientConnection->Port ());
+
+                auto start = std::chrono::high_resolution_clock::now ();
+                auto timeout = std::chrono::milliseconds (
+                    m_config->backupConnectionTimeout());
+
+                while (!clientConnection->Connected ())
+                {
+                    auto now = std::chrono::high_resolution_clock::now ();
+                    if (now - start > timeout)
+                    {
+                        clientConnection->Disconnect ();
+                        m_active_connection = nullptr;
+                        Tase2Utility::log_warn("Timeout while connecting to %s:%d",clientConnection->IP ().c_str (),
+                                            clientConnection->Port ());
+                        break;
+                    }
+                    Thread_sleep (10);
+                }
+
+                if (m_active_connection)
+                {
                     break;
                 }
             }
-            if (!foundOpenConnections) {
-                updateConnectionStatus(ConnectionStatus::NOT_CONNECTED);
-            }
         }
-        lock.unlock();
-        Thread_sleep(100);
+        else
+        {
+            backupConnectionStartTime
+                = Hal_getTimeInMs () + m_config->backupConnectionTimeout();
+        }
+
+        Thread_sleep (100);
     }
 
     cleanUpConnections();
-}
-
-bool TASE2Client::tryEstablishConnection(TASE2ClientConnection* clientConnection) {
-    clientConnection->Connect();
-    clientConnection->Start();
-    auto start = std::chrono::high_resolution_clock::now();
-    auto timeout = std::chrono::milliseconds(m_config->backupConnectionTimeout());
-
-    while (!clientConnection->Connected()) {
-        auto now = std::chrono::high_resolution_clock::now();
-        if (now - start > timeout) {
-            clientConnection->Disconnect();
-            return false;
-        }
-        Thread_sleep(10);
-    }
-
-    return true;
 }
 
 void TASE2Client::cleanUpConnections() {

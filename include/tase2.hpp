@@ -22,8 +22,6 @@
 #include "tase2_client_config.hpp"
 #include "tase2_client_connection.hpp"
 
-#define BACKUP_CONNECTION_TIMEOUT 5000
-
 class TASE2Client;
 
 class TASE2
