@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 2.8)
 
 # Set the plugin name to build
 project(tase2)
@@ -41,7 +41,7 @@ if (${CMAKE_BUILD_TYPE} STREQUAL Coverage)
   )
 else()
   message("Build without Coverage")
-  set(CMAKE_CXX_FLAGS "-std=c++14 -O3 -Wall")
+  set(CMAKE_CXX_FLAGS "-std=c++11 -O3")
 endif()
 
 # Generation version header file
